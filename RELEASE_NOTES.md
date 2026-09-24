@@ -1,7 +1,7 @@
-# Blockwild 0.0.2
+# Blockwild 0.0.3
 
 **Visibility:** Private
 
-Render the first voxel.
+Make the voxel grid editable.
 
 This source snapshot follows the Blockwild GDD and roadmap architecture already integrated on `main`. GitHub Releases for Blockwild intentionally contain source code only; no executable assets are attached.
