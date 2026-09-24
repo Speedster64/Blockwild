@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "feature/**", "experiment/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.4.1
+        run: |
+          curl -L -o godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip godot.zip
+          mv Godot_v4.4.1-stable_linux.x86_64 godot
+          chmod +x godot
+      - name: Verify engine version
+        run: ./godot --version
+      - name: Import project
+        run: ./godot --headless --editor --quit --path .
+      - name: Run smoke tests
+        run: ./godot --headless --path . --script tests/test_runner.gd
