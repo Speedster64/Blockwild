@@ -8,10 +8,19 @@ const SIZE_Y := 64
 var chunk_coord := Vector2i.ZERO
 var _blocks := PackedInt32Array()
 var _dirty := true
+var _collision_body: StaticBody3D
+var _collision_shape: CollisionShape3D
 
 func _init() -> void:
 	_blocks.resize(SIZE_X * SIZE_Y * SIZE_Z)
 	_blocks.fill(BlockRegistry.BlockId.AIR)
+
+func _ready() -> void:
+	_collision_body = StaticBody3D.new()
+	_collision_shape = CollisionShape3D.new()
+	_collision_body.add_child(_collision_shape)
+	add_child(_collision_body)
+	_refresh_collision()
 
 func index_of(x: int, y: int, z: int) -> int:
 	return x + SIZE_X * (z + SIZE_Z * y)
@@ -55,6 +64,7 @@ func rebuild_mesh() -> void:
 					continue
 				_append_visible_faces(st, Vector3i(x, y, z))
 	mesh = st.commit()
+	_refresh_collision()
 	_dirty = false
 
 func _append_visible_faces(st: SurfaceTool, p: Vector3i) -> void:
@@ -82,3 +92,11 @@ func _append_face(st: SurfaceTool, p: Vector3, normal_i: Vector3i) -> void:
 	for vertex in [a, b, e, a, e, d]:
 		st.set_normal(n)
 		st.add_vertex(vertex)
+
+func _refresh_collision() -> void:
+	if _collision_shape == null:
+		return
+	if mesh == null or mesh.get_surface_count() == 0:
+		_collision_shape.shape = null
+		return
+	_collision_shape.shape = mesh.create_trimesh_shape()
