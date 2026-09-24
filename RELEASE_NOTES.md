@@ -1,7 +1,7 @@
-# Blockwild 0.0.7
+# Blockwild 0.0.8
 
 **Visibility:** Private
 
-Stream chunks around the player.
+Stabilize prototype frame and memory budgets.
 
 This source snapshot follows the Blockwild GDD and roadmap architecture already integrated on `main`. GitHub Releases intentionally contain source code only; no executable assets are attached.
