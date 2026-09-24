@@ -83,13 +83,14 @@ jobs:
           elif [[ "$MODE" == "prerelease" ]]; then
             FLAGS+=(--prerelease)
           fi
-          gh release create "v$VERSION" --title "$TITLE" --notes-file RELEASE_NOTES.md "${FLAGS[@]}"
+          printf '# Blockwild %s\n\n%s.\n\nSource-only milestone; no executable assets are attached.\n' "$VERSION" "$TITLE" > /tmp/blockwild-release-notes.md
+          gh release create "v$VERSION" --title "$TITLE" --notes-file /tmp/blockwild-release-notes.md "${FLAGS[@]}"
 
           if [[ -f RELEASE_ALIASES ]]; then
             while IFS= read -r ALIAS; do
               [[ -z "$ALIAS" ]] && continue
               git tag -a "v$ALIAS" -m "$TITLE" "$GITHUB_SHA"
               git push origin "v$ALIAS"
-              gh release create "v$ALIAS" --title "$TITLE ($ALIAS)" --notes-file RELEASE_NOTES.md --prerelease
+              gh release create "v$ALIAS" --title "$TITLE ($ALIAS)" --notes-file /tmp/blockwild-release-notes.md --prerelease
             done < RELEASE_ALIASES
           fi
