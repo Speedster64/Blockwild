@@ -1,23 +1,85 @@
-name: Source Release Validation
+name: Source Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: ["main"]
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  source-only:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read release metadata
+        id: meta
+        shell: bash
+        run: |
+          VERSION="$(tr -d '\r\n' < VERSION)"
+          TITLE="$(tr -d '\r\n' < RELEASE_TITLE)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == "dev" || -z "$VERSION" ]]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          elif git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Reject executable release files
+        if: steps.meta.outputs.publish == 'true'
         shell: bash
         run: |
           if find . -type f \( -iname '*.exe' -o -iname '*.appimage' -o -iname '*.apk' -o -iname '*.dmg' -o -iname '*.msi' \) -print -quit | grep -q .; then
             echo "Executable artifact found in source tree."
             exit 1
           fi
-          echo "Source-only policy satisfied."
+
+      - name: Determine visibility
+        if: steps.meta.outputs.publish == 'true'
+        id: visibility
+        shell: bash
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          if [[ "$VERSION" =~ ^0\.(0|1)\. ]]; then
+            echo "mode=draft" >> "$GITHUB_OUTPUT"
+          elif [[ "$VERSION" =~ ^0\.(2|3)\. ]]; then
+            echo "mode=prerelease" >> "$GITHUB_OUTPUT"
+          elif [[ "$VERSION" == *-alpha.* || "$VERSION" == *-beta.* || "$VERSION" == *-rc.* ]]; then
+            echo "mode=prerelease" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=public" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create tag
+        if: steps.meta.outputs.publish == 'true'
+        shell: bash
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "${{ steps.meta.outputs.title }}"
+          git push origin "v$VERSION"
+
+      - name: Create source-only GitHub release
+        if: steps.meta.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          TITLE="${{ steps.meta.outputs.title }}"
+          MODE="${{ steps.visibility.outputs.mode }}"
+          FLAGS=()
+          if [[ "$MODE" == "draft" ]]; then
+            FLAGS+=(--draft)
+          elif [[ "$MODE" == "prerelease" ]]; then
+            FLAGS+=(--prerelease)
+          fi
+          gh release create "v$VERSION" --title "$TITLE" --notes-file RELEASE_NOTES.md "${FLAGS[@]}"
