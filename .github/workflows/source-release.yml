@@ -1,0 +1,23 @@
+name: Source Release Validation
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  source-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject executable release files
+        shell: bash
+        run: |
+          if find . -type f \( -iname '*.exe' -o -iname '*.appimage' -o -iname '*.apk' -o -iname '*.dmg' -o -iname '*.msi' \) -print -quit | grep -q .; then
+            echo "Executable artifact found in source tree."
+            exit 1
+          fi
+          echo "Source-only policy satisfied."
