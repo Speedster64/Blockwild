@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   release:
+    if: startsWith(github.event.head_commit.message, 'milestone:') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -83,3 +84,12 @@ jobs:
             FLAGS+=(--prerelease)
           fi
           gh release create "v$VERSION" --title "$TITLE" --notes-file RELEASE_NOTES.md "${FLAGS[@]}"
+
+          if [[ -f RELEASE_ALIASES ]]; then
+            while IFS= read -r ALIAS; do
+              [[ -z "$ALIAS" ]] && continue
+              git tag -a "v$ALIAS" -m "$TITLE" "$GITHUB_SHA"
+              git push origin "v$ALIAS"
+              gh release create "v$ALIAS" --title "$TITLE ($ALIAS)" --notes-file RELEASE_NOTES.md --prerelease
+            done < RELEASE_ALIASES
+          fi
