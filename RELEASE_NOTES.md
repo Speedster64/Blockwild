@@ -1,7 +1,7 @@
-# Blockwild 0.0.8
+# Release notes
 
-**Visibility:** Private
+[GitHub Releases](https://github.com/Speedster64/Blockwild/releases) is the source of truth for published release notes. See the [latest stable release](https://github.com/Speedster64/Blockwild/releases/latest) for the current stable milestone.
 
-Stabilize prototype frame and memory budgets.
+[VERSION](VERSION) and [RELEASE_TITLE](RELEASE_TITLE) define the version and title used by the [Source Release workflow](.github/workflows/source-release.yml). The workflow generates GitHub release notes from these files; it does not read this document.
 
-This source snapshot follows the Blockwild GDD and roadmap architecture already integrated on `main`. GitHub Releases intentionally contain source code only; no executable assets are attached.
+GitHub Releases contain source code only; no executable assets are attached.
